@@ -24,13 +24,18 @@ const MyListScreen: React.FC = () => {
     clearAllFruits, 
     addFruit 
   } = useFruitList();
-  const [activeTab, setActiveTab] = useState<'myList' | 'recommended'>('myList');
+  const [activeTab, setActiveTab] = useState<'myList' | 'recommended' | 'avoided'>('myList');
 
   const selectedFruits = allFruits.filter(fruit => selectedFruitIds.includes(fruit.id));
 
   const getRecommendedFruits = () => {
     // Use personalized fruits from API that are marked as 'recommended'
     return personalizedFruits.filter(fruit => fruit.recommendationLevel === 'recommended');
+  };
+
+  const getAvoidedFruits = () => {
+    // Use personalized fruits from API that are marked as 'avoid'
+    return personalizedFruits.filter(fruit => fruit.recommendationLevel === 'avoid');
   };
 
   const clearAllRecommended = () => {
@@ -64,10 +69,11 @@ const MyListScreen: React.FC = () => {
   };
 
   const recommendedFruits = getRecommendedFruits();
+  const avoidedFruits = getAvoidedFruits();
   const totalNutrition = getTotalNutrition();
   const recommendedNutrition = getTotalNutrition(recommendedFruits);
 
-  const renderTabButton = (tab: 'myList' | 'recommended', title: string, count: number) => (
+  const renderTabButton = (tab: 'myList' | 'recommended' | 'avoided', title: string, count: number) => (
     <TouchableOpacity
       style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
       onPress={() => setActiveTab(tab)}
@@ -136,10 +142,23 @@ const MyListScreen: React.FC = () => {
         {isRecommended && item.recommendationLevel && (
           <View style={styles.recommendationContainer}>
             <Chip 
-              style={[styles.recommendationChip, { backgroundColor: '#4CAF50' }]}
+              style={[
+                styles.recommendationChip, 
+                { 
+                  backgroundColor: item.recommendationLevel === 'recommended' 
+                    ? '#4CAF50' 
+                    : item.recommendationLevel === 'avoid' 
+                    ? '#F44336' 
+                    : '#FF9800' 
+                }
+              ]}
               textStyle={{ color: '#FFF', fontSize: 12 }}
             >
-              RECOMMENDED
+              {item.recommendationLevel === 'recommended' 
+                ? 'RECOMMENDED' 
+                : item.recommendationLevel === 'avoid' 
+                ? 'AVOID' 
+                : 'MODERATE'}
             </Chip>
           </View>
         )}
@@ -196,6 +215,7 @@ const MyListScreen: React.FC = () => {
         <View style={styles.tabContainer}>
           {renderTabButton('myList', 'My List', selectedFruits.length)}
           {renderTabButton('recommended', 'Recommended', recommendedFruits.length)}
+          {renderTabButton('avoided', 'Avoid', avoidedFruits.length)}
         </View>
 
         {activeTab === 'myList' ? (
@@ -220,7 +240,7 @@ const MyListScreen: React.FC = () => {
               </Card>
             )}
           </>
-        ) : (
+        ) : activeTab === 'recommended' ? (
           <>
             {/* Recommended List Content */}
             {(!user?.conditions || user.conditions.length === 0) ? (
@@ -248,6 +268,44 @@ const MyListScreen: React.FC = () => {
                     </Text>
                   </Card.Content>
                 </Card>
+
+                {/* Recommendation explanation */}
+                {recommendedFruits.length > 0 && (
+                  <Card style={[styles.explanationCard, { backgroundColor: paperTheme.colors.surface }]}>
+                    <Card.Content>
+                      <Text style={[styles.sectionTitle, { color: paperTheme.colors.onSurface }]}>
+                        💡 Why These Fruits?
+                      </Text>
+                      <Text style={[styles.explanationText, { color: paperTheme.colors.onSurfaceVariant }]}>
+                        Our AI-powered recommendation system analyzed your medical condition{user.conditions.length > 1 ? 's' : ''} and selected fruits that are scientifically proven to be beneficial. Each recommendation includes specific reasons based on glycemic index, nutritional content, and medical research.
+                      </Text>
+                      <View style={styles.statsContainer}>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statNumber, { color: '#4CAF50' }]}>{recommendedFruits.length}</Text>
+                          <Text style={[styles.statLabel, { color: paperTheme.colors.onSurfaceVariant }]}>Recommended</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statNumber, { color: '#FF9800' }]}>
+                            {personalizedFruits.filter(f => f.recommendationLevel === 'moderate').length}
+                          </Text>
+                          <Text style={[styles.statLabel, { color: paperTheme.colors.onSurfaceVariant }]}>Moderate</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statNumber, { color: '#FF5722' }]}>
+                            {personalizedFruits.filter(f => f.recommendationLevel === 'limit').length}
+                          </Text>
+                          <Text style={[styles.statLabel, { color: paperTheme.colors.onSurfaceVariant }]}>Limited</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statNumber, { color: '#F44336' }]}>
+                            {personalizedFruits.filter(f => f.recommendationLevel === 'avoid').length}
+                          </Text>
+                          <Text style={[styles.statLabel, { color: paperTheme.colors.onSurfaceVariant }]}>Avoid</Text>
+                        </View>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                )}
                 
                 {renderNutritionCard('Recommended Nutrition', recommendedNutrition, recommendedFruits.length)}
                 {recommendedFruits.length > 0 ? (
@@ -281,6 +339,55 @@ const MyListScreen: React.FC = () => {
                       </Text>
                       <Text style={[styles.emptyText, { color: paperTheme.colors.onSurfaceVariant }]}>
                         We're working to provide better fruit recommendations for your selected conditions.
+                      </Text>
+                    </Card.Content>
+                  </Card>
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Avoided List Content */}
+            {(!user?.conditions || user.conditions.length === 0) ? (
+              <Card style={[styles.emptyCard, { backgroundColor: paperTheme.colors.surface }]}>
+                <Card.Content style={styles.emptyContent}>
+                  <Ionicons name="medical-outline" size={60} color={isDark ? '#FFFFFF' : '#666'} />
+                  <Text style={[styles.emptyTitle, { color: paperTheme.colors.onSurface }]}>
+                    No Medical Conditions Set
+                  </Text>
+                  <Text style={[styles.emptyText, { color: paperTheme.colors.onSurfaceVariant }]}>
+                    To see fruits you should avoid, please add your medical conditions in Settings.
+                  </Text>
+                </Card.Content>
+              </Card>
+            ) : (
+              <>
+                {/* Show current conditions */}
+                <Card style={[styles.conditionsCard, { backgroundColor: paperTheme.colors.surface }]}>
+                  <Card.Content>
+                    <Text style={[styles.sectionTitle, { color: paperTheme.colors.onSurface }]}>
+                      ⚠️ Fruits to Avoid
+                    </Text>
+                    <Text style={[styles.subtitle, { color: paperTheme.colors.onSurfaceVariant }]}>
+                      Based on your condition{user.conditions.length > 1 ? 's' : ''}: {user.conditions.map(c => c.replace(/_/g, ' ')).join(', ')}
+                    </Text>
+                  </Card.Content>
+                </Card>
+                
+                {avoidedFruits.length > 0 ? (
+                  <View style={styles.fruitsContainer}>
+                    {renderFruitsList(avoidedFruits, true)}
+                  </View>
+                ) : (
+                  <Card style={[styles.emptyCard, { backgroundColor: paperTheme.colors.surface }]}>
+                    <Card.Content style={styles.emptyContent}>
+                      <Ionicons name="checkmark-circle-outline" size={60} color="#4CAF50" />
+                      <Text style={[styles.emptyTitle, { color: paperTheme.colors.onSurface }]}>
+                        Great News!
+                      </Text>
+                      <Text style={[styles.emptyText, { color: paperTheme.colors.onSurfaceVariant }]}>
+                        No fruits need to be completely avoided based on your current medical conditions. You can enjoy a wide variety of fruits safely!
                       </Text>
                     </Card.Content>
                   </Card>
@@ -360,6 +467,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 12,
     elevation: 2,
+  },
+  explanationCard: {
+    marginBottom: 16,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  explanationText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+    marginTop: 4,
   },
   nutritionCard: {
     marginBottom: 16,

@@ -1,25 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Card, Divider, Button, ActivityIndicator } from 'react-native-paper';
+import { Card, Divider, Button, ActivityIndicator, IconButton, Chip } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useFruitList } from '../contexts/FruitListContext';
 import { planService, WeeklyPlan, DailyPlan } from '../services/planService';
+import { apiService } from '../services/apiService';
 
 const TimetableScreen: React.FC = () => {
   const { user } = useAuth();
   const { isDark, paperTheme } = useTheme();
-  const { selectedFruitIds } = useFruitList();
+  const { selectedFruitIds, personalizedFruits, addFruit, isFruitSelected } = useFruitList();
   const [currentPlan, setCurrentPlan] = useState<WeeklyPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [recommendedFruits, setRecommendedFruits] = useState<any[]>([]);
 
   useEffect(() => {
     if (user?.id) {
       fetchCurrentPlan();
+      loadRecommendedFruits();
     }
   }, [user?.id]);
+
+  // Load recommended fruits
+  const loadRecommendedFruits = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await apiService.get(`/fruits/recommended/${user.id}`);
+      if (response.success && response.fruits) {
+        setRecommendedFruits(response.fruits);
+      }
+    } catch (error) {
+      console.error('Error loading recommended fruits:', error);
+    }
+  };
 
   // Generate new plan when selected fruits change
   useEffect(() => {
@@ -86,10 +104,43 @@ const TimetableScreen: React.FC = () => {
       <View style={styles.dayFruits}>
         {dayPlan.fruits.map((fruit, index) => (
           <View key={index} style={styles.fruitItem}>
-            <Text style={[styles.fruitInfo, { color: paperTheme.colors.onSurface }]}>
-              {planService.getTimeOfDayDisplay(fruit.timeOfDay)}: {fruit.fruitName} x{fruit.quantity}
-            </Text>
-            <Text style={[styles.fruitBenefits, { color: paperTheme.colors.onSurface }]}>{fruit.benefits}</Text>
+            <View style={styles.fruitHeader}>
+              <View style={styles.fruitDetails}>
+                <Text style={[styles.fruitInfo, { color: paperTheme.colors.onSurface }]}>
+                  {planService.getTimeOfDayDisplay(fruit.timeOfDay)}: {fruit.fruitName} x{fruit.quantity}
+                </Text>
+                <Text style={[styles.fruitBenefits, { color: paperTheme.colors.onSurface }]}>{fruit.benefits}</Text>
+              </View>
+              
+              {/* Add button for fruits not yet selected */}
+              {(() => {
+                const fruitData = recommendedFruits.find(f => f.name.toLowerCase() === fruit.fruitName.toLowerCase());
+                const isSelected = fruitData && isFruitSelected(fruitData.id);
+                
+                if (fruitData && !isSelected) {
+                  return (
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => {
+                        addFruit(fruitData.id);
+                        Alert.alert('Added!', `${fruit.fruitName} has been added to your list.`);
+                      }}
+                    >
+                      <Ionicons name="add-circle" size={24} color="#4CAF50" />
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </TouchableOpacity>
+                  );
+                } else if (fruitData && isSelected) {
+                  return (
+                    <View style={styles.selectedIndicator}>
+                      <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                      <Text style={styles.selectedText}>Selected</Text>
+                    </View>
+                  );
+                }
+                return null;
+              })()}
+            </View>
           </View>
         ))}
       </View>
@@ -153,6 +204,49 @@ const TimetableScreen: React.FC = () => {
               </Card.Content>
             </Card>
 
+            {/* Recommended Fruits Section */}
+            {recommendedFruits.length > 0 && (
+              <Card style={[styles.recommendedCard, { backgroundColor: paperTheme.colors.surface }]}>
+                <Card.Content>
+                  <Text style={[styles.sectionTitle, { color: paperTheme.colors.onSurface }]}>🍎 Recommended for You</Text>
+                  <Text style={[styles.recommendedSubtext, { color: paperTheme.colors.onSurfaceVariant }]}>
+                    Based on your medical conditions, these fruits are highly recommended. Tap "Add" to include them in your next plan.
+                  </Text>
+                  <Divider style={styles.divider} />
+                  
+                  <View style={styles.recommendedFruitsGrid}>
+                    {recommendedFruits.slice(0, 6).map((fruit, index) => (
+                      <View key={fruit.id} style={styles.recommendedFruitItem}>
+                        <View style={styles.recommendedFruitInfo}>
+                          <Text style={[styles.recommendedFruitName, { color: paperTheme.colors.onSurface }]}>
+                            {fruit.name}
+                          </Text>
+                          <Text style={[styles.recommendedFruitReason, { color: paperTheme.colors.onSurfaceVariant }]} numberOfLines={2}>
+                            {fruit.reasons && fruit.reasons[0]}
+                          </Text>
+                        </View>
+                        
+                        {!isFruitSelected(fruit.id) ? (
+                          <TouchableOpacity
+                            style={styles.smallAddButton}
+                            onPress={() => {
+                              addFruit(fruit.id);
+                              Alert.alert('Added!', `${fruit.name} has been added to your list.`);
+                            }}
+                          >
+                            <Ionicons name="add-circle" size={20} color="#4CAF50" />
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={styles.smallSelectedIndicator}>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                </Card.Content>
+              </Card>
+            )}
 
             {/* Nutritional Summary */}
             <Card style={[styles.nutritionCard, { backgroundColor: paperTheme.colors.surface }]}>
@@ -183,12 +277,12 @@ const TimetableScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>� Generate Current Plan</Text>
             <Divider style={styles.divider} />
             <Text style={[styles.actionText, { color: paperTheme.colors.onSurface }]}>
-              Create a new AI-powered weekly meal plan using your selected fruits and medical conditions.
+              Create a new AI-powered weekly meal plan using your selected fruits and personalized medical recommendations.
             </Text>
             <Text style={[styles.actionSubtext, { color: paperTheme.colors.onSurface }]}>
               {selectedFruitIds.length > 0 
-                ? `✅ Ready to generate with ${selectedFruitIds.length} selected fruits`
-                : '⚠️ Select fruits from the Home tab first'
+                ? `✅ Ready to generate with ${selectedFruitIds.length} selected fruits + recommended fruits`
+                : '🤖 Will auto-select recommended fruits based on your medical conditions'
               }
             </Text>
             <Button 
@@ -198,9 +292,14 @@ const TimetableScreen: React.FC = () => {
               icon="plus-circle"
               onPress={generateNewPlan}
               loading={generating}
-              disabled={generating || selectedFruitIds.length === 0}
+              disabled={generating}
             >
-              {currentPlan ? 'Generate New Plan' : 'Create My First Plan'}
+              {generating 
+                ? 'Generating Plan...' 
+                : currentPlan 
+                ? 'Generate New Plan' 
+                : 'Create My Smart Plan'
+              }
             </Button>
           </Card.Content>
         </Card>
@@ -423,6 +522,89 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
+  },
+  fruitHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  fruitDetails: {
+    flex: 1,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  addButtonText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  selectedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  selectedText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  recommendedCard: {
+    marginBottom: 20,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  recommendedSubtext: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  recommendedFruitsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  recommendedFruitItem: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  recommendedFruitInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  recommendedFruitName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  recommendedFruitReason: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  smallAddButton: {
+    padding: 4,
+  },
+  smallSelectedIndicator: {
+    padding: 4,
   },
 });
 

@@ -30,9 +30,9 @@ const SettingsScreen: React.FC = () => {
 
   const getConditionsDisplay = () => {
     if (!user?.conditions || user.conditions.length === 0) {
-      return '0 condition(s)';
+      return 'condition(s)';
     }
-    return `${user.conditions.length} condition(s)`;
+    return `condition(s)`;
   };
 
   const gradientColors: readonly [string, string] = isDark 
