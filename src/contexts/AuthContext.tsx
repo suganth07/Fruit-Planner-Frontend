@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiService } from '../services/apiService';
 import config from '../config/env';
 
 interface User {
@@ -7,6 +8,8 @@ interface User {
   email: string;
   name: string;
   conditions?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthContextType {
@@ -15,6 +18,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string, conditions?: string[]) => Promise<boolean>;
   logout: () => Promise<void>;
   updateUser: (userData: User) => void;
+  refreshUserData: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -35,6 +39,49 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load user data on app start
+  useEffect(() => {
+    loadStoredUserData();
+  }, []);
+
+  const loadStoredUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('@user_data');
+      const token = await AsyncStorage.getItem('@auth_token');
+      
+      if (userData && token) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        
+        // Refresh user data from server in the background
+        refreshUserData();
+      }
+    } catch (error) {
+      console.error('Error loading stored user data:', error);
+    }
+  };
+
+  const refreshUserData = async (): Promise<void> => {
+    try {
+      const response = await apiService.get('/users/profile');
+      if (response.user) {
+        const updatedUser: User = {
+          id: response.user.id.toString(),
+          email: response.user.email,
+          name: response.user.name,
+          conditions: response.user.conditions || [],
+          createdAt: response.user.createdAt,
+          updatedAt: response.user.updatedAt
+        };
+        
+        await updateUser(updatedUser);
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      // Don't throw error, just log it as this is a background operation
+    }
+  };
 
   const saveTokenAndUser = async (token: string, userData: User) => {
     try {
@@ -84,8 +131,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData: User = {
           id: data.data.user.id.toString(),
           email: data.data.user.email,
-          name: name,
-          conditions: data.data.user.conditions || []
+          name: data.data.user.name || name,
+          conditions: data.data.user.conditions || [],
+          createdAt: data.data.user.createdAt,
+          updatedAt: data.data.user.updatedAt
         };
 
         await saveTokenAndUser(data.data.token, userData);
@@ -121,8 +170,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData: User = {
           id: data.data.user.id.toString(),
           email: data.data.user.email,
-          name: email.split('@')[0], // Extract name from email for now
-          conditions: data.data.user.conditions || []
+          name: data.data.user.name || email.split('@')[0],
+          conditions: data.data.user.conditions || [],
+          createdAt: data.data.user.createdAt,
+          updatedAt: data.data.user.updatedAt
         };
 
         await saveTokenAndUser(data.data.token, userData);
@@ -156,12 +207,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await clearAuthData();
   };
 
-  const updateUser = (userData: User) => {
+  const updateUser = async (userData: User) => {
     setUser(userData);
     // Also update AsyncStorage
-    AsyncStorage.setItem('@user_data', JSON.stringify(userData)).catch(error => {
+    try {
+      await AsyncStorage.setItem('@user_data', JSON.stringify(userData));
+    } catch (error) {
       console.error('Error updating user data in storage:', error);
-    });
+    }
   };
 
   const value: AuthContextType = {
@@ -170,6 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     updateUser,
+    refreshUserData,
     isLoading
   };
 

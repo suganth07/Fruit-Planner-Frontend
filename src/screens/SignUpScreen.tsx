@@ -29,10 +29,30 @@ const medicalConditions = [
   { display: 'Kidney Stone', value: 'kidney_stone' },
   { display: 'High Cholesterol', value: 'high_cholesterol' },
   { display: 'Obesity', value: 'obesity' },
+  { display: 'Digestive Issues', value: 'digestive_issues' },
+  { display: 'Anemia', value: 'anemia' },
+  { display: 'Arthritis', value: 'arthritis' },
+  { display: 'Osteoporosis', value: 'osteoporosis' },
+  { display: 'Asthma', value: 'asthma' },
+  { display: 'Depression', value: 'depression' },
+  { display: 'GERD', value: 'gerd' },
   { display: 'Gout', value: 'gout' },
   { display: 'Acid Reflux', value: 'acid_reflux' },
   { display: 'Liver Disease', value: 'liver_disease' },
-  { display: 'Gallbladder Disease', value: 'gallbladder_disease' }
+  { display: 'Thyroid Issues', value: 'thyroid_issues' },
+  { display: 'Migraine', value: 'migraine' },
+  { display: 'Anxiety', value: 'anxiety' },
+  { display: 'Insomnia', value: 'insomnia' },
+  { display: 'Chronic Fatigue', value: 'chronic_fatigue' },
+  { display: 'Fibromyalgia', value: 'fibromyalgia' },
+  { display: 'PCOS', value: 'pcos' },
+  { display: 'Menopause', value: 'menopause' },
+  { display: 'Memory Issues', value: 'memory_issues' },
+  { display: 'Eye Health', value: 'eye_health' },
+  { display: 'Skin Problems', value: 'skin_problems' },
+  { display: 'Immune Support', value: 'immune_support' },
+  { display: 'Weight Management', value: 'weight_management' },
+  { display: 'Bone Health', value: 'bone_health' }
 ];
 
 interface SignUpScreenProps {

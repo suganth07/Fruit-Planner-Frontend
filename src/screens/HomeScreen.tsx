@@ -5,31 +5,39 @@ import {
   Card,
   Searchbar,
   Checkbox,
-  Chip
+  Chip,
+  ActivityIndicator
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useFruitList } from '../contexts/FruitListContext';
-import { fruitsData, FruitData } from '../data/fruits';
+import { getFruitEmoji, getRecommendationStyle } from '../utils/fruitUtils';
 
 const FRUITS_PER_PAGE = 6;
 
 const HomeScreen: React.FC = () => {
   const { user } = useAuth();
   const { isDark, paperTheme } = useTheme();
-  const { selectedFruitIds, addFruit, removeFruit, isFruitSelected } = useFruitList();
+  const { 
+    selectedFruitIds, 
+    allFruits, 
+    isLoadingFruits,
+    addFruit, 
+    removeFruit, 
+    isFruitSelected 
+  } = useFruitList();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Filter fruits based on search query
+  // Filter fruits based on search query only
   const filteredFruits = useMemo(() => {
-    return fruitsData.filter(fruit => 
+    return allFruits.filter(fruit => 
       fruit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fruit.benefits.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, allFruits]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredFruits.length / FRUITS_PER_PAGE);
@@ -48,90 +56,98 @@ const HomeScreen: React.FC = () => {
     setCurrentPage(page);
   };
 
-  const renderFruitCard = ({ item }: { item: FruitData }) => (
-    <Card style={[styles.fruitCard, { backgroundColor: paperTheme.colors.surface }]}>
-      <Card.Content style={styles.fruitCardContent}>
-        <View style={styles.fruitHeader}>
-          <View style={styles.fruitTitleRow}>
-            <Text style={styles.fruitEmoji}>{item.emoji}</Text>
-            <Text style={[styles.fruitName, { color: paperTheme.colors.onSurface }]}>{item.name}</Text>
+  const renderFruitCard = ({ item }: { item: any }) => {
+    const emoji = getFruitEmoji(item.name);
+    
+    return (
+      <Card style={[styles.fruitCard, { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' }]}>
+        <Card.Content style={styles.fruitCardContent}>
+          <View style={styles.fruitHeader}>
+            <View style={styles.fruitTitleRow}>
+              <Text style={styles.fruitEmoji}>{emoji}</Text>
+              <Text style={[styles.fruitName, { color: isDark ? '#FFFFFF' : '#333333' }]}>{item.name}</Text>
+            </View>
+            <Checkbox
+              status={isFruitSelected(item.id) ? 'checked' : 'unchecked'}
+              onPress={() => handleFruitToggle(item.id)}
+              theme={paperTheme}
+            />
           </View>
-          <Checkbox
-            status={isFruitSelected(item.id) ? 'checked' : 'unchecked'}
-            onPress={() => handleFruitToggle(item.id)}
-            theme={paperTheme}
-          />
-        </View>
-        
-        <Text style={[styles.fruitBenefits, { color: paperTheme.colors.onSurface }]} numberOfLines={2}>
-          {item.benefits}
-        </Text>
-        
-        <View style={styles.nutritionInfo}>
-          <Chip style={[styles.nutritionChip, { backgroundColor: paperTheme.colors.surfaceVariant }]} 
-                textStyle={[styles.chipText, { color: paperTheme.colors.onSurface }]}>
-            {item.calories} cal
-          </Chip>
-          <Chip style={[styles.nutritionChip, { backgroundColor: paperTheme.colors.surfaceVariant }]} 
-                textStyle={[styles.chipText, { color: paperTheme.colors.onSurface }]}>
-            {item.fiber}g fiber
-          </Chip>
-          <Chip style={[styles.nutritionChip, { backgroundColor: paperTheme.colors.surfaceVariant }]} 
-                textStyle={[styles.chipText, { color: paperTheme.colors.onSurface }]}>
-            {item.vitaminC}mg C
-          </Chip>
-        </View>
-      </Card.Content>
-    </Card>
-  );
+          
+          <Text style={[styles.fruitBenefits, { color: isDark ? '#CCCCCC' : '#666666' }]} numberOfLines={2}>
+            {item.benefits}
+          </Text>
+          
+          <View style={styles.nutritionInfo}>
+            <Chip style={[styles.nutritionChip, { backgroundColor: isDark ? '#444444' : 'rgba(98, 0, 238, 0.1)' }]} 
+                  textStyle={[styles.chipText, { color: isDark ? '#FFFFFF' : '#6200ee' }]}>
+              {item.calories} cal
+            </Chip>
+            <Chip style={[styles.nutritionChip, { backgroundColor: isDark ? '#444444' : 'rgba(98, 0, 238, 0.1)' }]} 
+                  textStyle={[styles.chipText, { color: isDark ? '#FFFFFF' : '#6200ee' }]}>
+              {item.fiber}g fiber
+            </Chip>
+            <Chip style={[styles.nutritionChip, { backgroundColor: isDark ? '#444444' : 'rgba(98, 0, 238, 0.1)' }]} 
+                  textStyle={[styles.chipText, { color: isDark ? '#FFFFFF' : '#6200ee' }]}>
+              {item.vitaminC}mg C
+            </Chip>
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
 
   const renderPagination = () => (
-    <View style={styles.paginationContainer}>
+    <View style={styles.paginationWrapper}>
+      {/* Previous Button */}
       <TouchableOpacity
-        style={[styles.paginationButton, currentPage === 1 && styles.disabledButton]}
+        style={[
+          styles.navButton,
+          currentPage === 1 && styles.navButtonDisabled
+        ]}
         onPress={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
       >
-        <Ionicons name="chevron-back" size={20} color={currentPage === 1 ? '#ccc' : '#6200ee'} />
-        <Text style={[styles.paginationText, currentPage === 1 && styles.disabledText]}>
-          Previous
+        <Ionicons 
+          name="chevron-back" 
+          size={2} 
+          color={currentPage === 1 ? '#666' : '#FFF'} 
+        />
+        <Text style={[
+          styles.navButtonText,
+          currentPage === 1 && styles.navButtonTextDisabled
+        ]}>
+          Prev
         </Text>
       </TouchableOpacity>
 
-      <View style={styles.pageNumbers}>
-        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-          const pageNum = i + Math.max(1, currentPage - 2);
-          if (pageNum > totalPages) return null;
-          
-          return (
-            <TouchableOpacity
-              key={pageNum}
-              style={[
-                styles.pageNumber,
-                currentPage === pageNum && styles.activePageNumber
-              ]}
-              onPress={() => handlePageChange(pageNum)}
-            >
-              <Text style={[
-                styles.pageNumberText,
-                currentPage === pageNum && styles.activePageNumberText
-              ]}>
-                {pageNum}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Page Info */}
+      <View style={styles.pageInfo}>
+        <Text style={styles.pageInfoText}>
+          {currentPage} of {totalPages}
+        </Text>
       </View>
 
+      {/* Next Button */}
       <TouchableOpacity
-        style={[styles.paginationButton, currentPage === totalPages && styles.disabledButton]}
+        style={[
+          styles.navButton,
+          currentPage === totalPages && styles.navButtonDisabled
+        ]}
         onPress={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
       >
-        <Text style={[styles.paginationText, currentPage === totalPages && styles.disabledText]}>
+        <Text style={[
+          styles.navButtonText,
+          currentPage === totalPages && styles.navButtonTextDisabled
+        ]}>
           Next
         </Text>
-        <Ionicons name="chevron-forward" size={20} color={currentPage === totalPages ? '#ccc' : '#6200ee'} />
+        <Ionicons 
+          name="chevron-forward" 
+          size={2} 
+          color={currentPage === totalPages ? '#666' : '#FFF'} 
+        />
       </TouchableOpacity>
     </View>
   );
@@ -144,40 +160,56 @@ const HomeScreen: React.FC = () => {
     <LinearGradient colors={gradientColors} style={styles.container}>
       <View style={styles.content}>
         <Text style={[styles.title, { color: paperTheme.colors.onBackground }]}>Discover Fruits</Text>
-        <Text style={[styles.subtitle, { color: paperTheme.colors.onBackground }]}>Find the perfect fruits for your health</Text>
+        <Text style={[styles.subtitle, { color: paperTheme.colors.onBackground }]}>
+          Browse and add fruits to your personal list
+        </Text>
 
         {/* Search Bar */}
         <Searchbar
           placeholder="Search fruits..."
           onChangeText={setSearchQuery}
           value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: paperTheme.colors.surface }]}
-          inputStyle={[styles.searchInput, { color: paperTheme.colors.onSurface }]}
+          style={[styles.searchBar, { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' }]}
+          inputStyle={[styles.searchInput, { color: isDark ? '#FFFFFF' : '#333333' }]}
+          iconColor={isDark ? '#FFFFFF' : '#666666'}
+          placeholderTextColor={isDark ? '#999999' : '#666666'}
           theme={paperTheme}
         />
 
         {/* Selected Fruits Counter */}
         {selectedFruitIds.length > 0 && (
-          <View style={[styles.selectedCounter, { backgroundColor: paperTheme.colors.primary }]}>
+          <View style={[styles.selectedCounter, { backgroundColor: isDark ? '#6200ee' : 'rgba(98, 0, 238, 0.9)' }]}>
             <Text style={styles.selectedText}>
               {selectedFruitIds.length} fruit{selectedFruitIds.length !== 1 ? 's' : ''} selected
             </Text>
           </View>
         )}
 
-        {/* Fruits List */}
-        <FlatList
-          data={paginatedFruits}
-          renderItem={renderFruitCard}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.fruitsList}
-          showsVerticalScrollIndicator={false}
-        />
+        {/* Loading State */}
+        {isLoadingFruits ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={paperTheme.colors.primary} />
+            <Text style={[styles.loadingText, { color: paperTheme.colors.onBackground }]}>
+              Loading fruits...
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Fruits List */}
+            <FlatList
+              data={paginatedFruits}
+              renderItem={renderFruitCard}
+              keyExtractor={(item) => item.id.toString()}
+              numColumns={2}
+              columnWrapperStyle={styles.row}
+              contentContainerStyle={styles.fruitsList}
+              showsVerticalScrollIndicator={false}
+            />
 
-        {/* Pagination */}
-        {totalPages > 1 && renderPagination()}
+            {/* Pagination */}
+            {totalPages > 1 && renderPagination()}
+          </>
+        )}
       </View>
     </LinearGradient>
   );
@@ -208,19 +240,33 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     marginBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   searchInput: {
     fontSize: 16,
   },
   selectedCounter: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginBottom: 16,
     alignSelf: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   selectedText: {
     color: '#fff',
@@ -236,8 +282,15 @@ const styles = StyleSheet.create({
   fruitCard: {
     width: '48%',
     marginBottom: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   fruitCardContent: {
     padding: 12,
@@ -260,12 +313,10 @@ const styles = StyleSheet.create({
   fruitName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
     flex: 1,
   },
   fruitBenefits: {
     fontSize: 12,
-    color: '#666',
     lineHeight: 16,
     marginBottom: 8,
   },
@@ -275,63 +326,108 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   nutritionChip: {
-    backgroundColor: 'rgba(98, 0, 238, 0.1)',
-    height: 24,
+    height: 26,
+    marginRight: 4,
+    marginBottom: 2,
+    borderRadius: 13,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.00,
   },
   chipText: {
-    fontSize: 10,
-    color: '#6200ee',
+    fontSize: 11,
     fontWeight: '600',
+    lineHeight: 14,
   },
-  paginationContainer: {
+  paginationWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    paddingHorizontal: 4,
+    marginTop: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    marginHorizontal: 8,
   },
-  paginationButton: {
+  navButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: '#6200ee',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    minWidth: 80,
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  disabledButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  navButtonDisabled: {
+    backgroundColor: '#444',
+    elevation: 1,
+    shadowOpacity: 0.1,
   },
-  paginationText: {
-    color: '#6200ee',
-    fontWeight: '600',
+  navButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
     marginHorizontal: 4,
   },
-  disabledText: {
-    color: '#ccc',
+  navButtonTextDisabled: {
+    color: '#888',
   },
-  pageNumbers: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pageNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  pageInfo: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    minWidth: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 2,
   },
-  activePageNumber: {
-    backgroundColor: '#6200ee',
-  },
-  pageNumberText: {
-    color: '#333',
+  pageInfoText: {
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: '600',
-    fontSize: 14,
   },
-  activePageNumberText: {
-    color: '#fff',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  recommendationBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  recommendationText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  medicalReason: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    marginBottom: 8,
+    lineHeight: 12,
   },
 });
 
