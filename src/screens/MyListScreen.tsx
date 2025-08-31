@@ -199,7 +199,11 @@ const MyListScreen: React.FC = () => {
   );
 
   const renderFruitsList = (fruits: any[], isRecommended = false) => (
-    fruits.map((item) => renderFruitItem({ item }, isRecommended))
+    fruits.map((item, index) => (
+      <View key={item.id || item.name || index}>
+        {renderFruitItem({ item }, isRecommended)}
+      </View>
+    ))
   );
 
   const gradientColors: readonly [string, string] = isDark 

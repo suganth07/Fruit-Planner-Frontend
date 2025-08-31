@@ -200,7 +200,7 @@ const TimetableScreen: React.FC = () => {
                 </View>
                 <Divider style={styles.divider} />
                 
-                {currentPlan.planData.map(renderDayPlan)}
+                {currentPlan.planData.map((dayPlan, index) => renderDayPlan(dayPlan))}
               </Card.Content>
             </Card>
 

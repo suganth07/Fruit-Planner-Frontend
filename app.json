@@ -1,46 +1,47 @@
 {
   "expo": {
-    "name": "Fruit Planner",
-    "slug": "fruit-planner",
+    "name": "FruitPlan AI",
+    "slug": "fruitplan-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "scheme": "fruitplan",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6200ee"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fruitplanner.app"
+      "bundleIdentifier": "com.fruitplan.ai",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#6200ee"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.fruitplanner.app"
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "package": "com.fruitplan.ai",
+      "versionCode": 1
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
-    "plugins": [
-      [
-        "expo-font",
-        {
-          "fonts": ["./assets/fonts/MaterialIcons.ttf"]
-        }
-      ]
-    ],
     "extra": {
-      "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.2:3000/api",
-      "EXPO_PUBLIC_ENV": "development"
-    },
-    "packagerOpts": {
-      "host": "192.168.1.2"
+      "EXPO_PUBLIC_API_BASE_URL": "https://fruit-planner-backend.onrender.com/api",
+      "EXPO_PUBLIC_ENV": "production",
+      "eas": {
+        "projectId": "96e9d39a-d10a-4dac-9c6e-1218ba5b3302"
+      }
     }
   }
 }
