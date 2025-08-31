@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { 
   Text, 
   Card,
@@ -180,13 +180,7 @@ const MyListScreen: React.FC = () => {
   );
 
   const renderFruitsList = (fruits: any[], isRecommended = false) => (
-    <FlatList
-      data={fruits}
-      renderItem={(itemInfo) => renderFruitItem(itemInfo, isRecommended)}
-      keyExtractor={(item) => item.id.toString()}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.fruitsList}
-    />
+    fruits.map((item) => renderFruitItem({ item }, isRecommended))
   );
 
   const gradientColors: readonly [string, string] = isDark 
@@ -195,7 +189,7 @@ const MyListScreen: React.FC = () => {
 
   return (
     <LinearGradient colors={gradientColors} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: paperTheme.colors.onBackground }]}>My Fruit Center</Text>
         
         {/* Tab Navigation */}
@@ -209,7 +203,9 @@ const MyListScreen: React.FC = () => {
             {/* My List Content */}
             {renderNutritionCard('My Nutrition Summary', totalNutrition, selectedFruits.length)}
             {selectedFruits.length > 0 ? (
-              renderFruitsList(selectedFruits, false)
+              <View style={styles.fruitsContainer}>
+                {renderFruitsList(selectedFruits, false)}
+              </View>
             ) : (
               <Card style={[styles.emptyCard, { backgroundColor: paperTheme.colors.surface }]}>
                 <Card.Content style={styles.emptyContent}>
@@ -272,7 +268,9 @@ const MyListScreen: React.FC = () => {
                         Remove All
                       </Button>
                     </View>
-                    {renderFruitsList(recommendedFruits, true)}
+                    <View style={styles.fruitsContainer}>
+                      {renderFruitsList(recommendedFruits, true)}
+                    </View>
                   </>
                 ) : (
                   <Card style={[styles.emptyCard, { backgroundColor: paperTheme.colors.surface }]}>
@@ -300,10 +298,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContainer: {
+    flex: 1,
+  },
   content: {
     flexGrow: 1,
     padding: 20,
     paddingTop: 60,
+  },
+  fruitsContainer: {
+    flex: 1,
   },
   title: {
     fontSize: 28,
@@ -333,6 +337,15 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  tabContent: {
+    flex: 1,
+  },
+  recommendedContent: {
+    flex: 1,
+  },
+  recommendedFruitsContainer: {
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 18,

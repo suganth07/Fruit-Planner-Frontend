@@ -3,39 +3,61 @@ export const fruitEmojis: { [key: string]: string } = {
   'apple': '🍎',
   'banana': '🍌',
   'orange': '🍊',
+  'grape': '🍇',
+  'grapes': '🍇',
   'strawberry': '🍓',
+  'strawberries': '🍓',
+  'blueberry': '🫐',
+  'blueberries': '🫐',
   'kiwi': '🥝',
   'mango': '🥭',
+  'papaya': '🧡', // Using orange heart as papaya emoji doesn't exist
   'pineapple': '🍍',
-  'grapes': '🍇',
-  'blueberry': '🫐',
   'watermelon': '🍉',
-  'peach': '🍑',
-  'cherry': '🍒',
+  'pomegranate': '🔴', // Using red circle
   'avocado': '🥑',
-  'papaya': '🥭',
+  'cherry': '�',
+  'cherries': '🍒',
+  'peach': '🍑',
+  'plum': '🟣',
+  'apricot': '🟠',
   'coconut': '🥥',
   'lemon': '🍋',
-  'lime': '🍈',
-  'pomegranate': '🍎',
+  'lime': '💚', // Using green heart
+  'grapefruit': '🟡', // Using yellow circle
+  'blackberry': '⚫', // Using black circle
+  'blackberries': '⚫',
+  'raspberry': '🔴', // Using red circle
+  'raspberries': '🔴',
+  'cantaloupe': '�',
+  'honeydew': '🍈',
+  'cranberry': '�',
+  'cranberries': '�',
+  'date': '🟤', // Using brown circle
+  'dates': '�',
+  'fig': '🟤',
+  'figs': '�',
   'dragon fruit': '🐉',
   'guava': '🟢',
   'passion fruit': '🟣',
-  'lychee': '🫐',
-  'jackfruit': '🟡',
+  'lychee': '🤍', // Using white heart
+  'jackfruit': '�',
   'star fruit': '⭐',
-  'cantaloupe': '🍈',
-  'honeydew': '🍈',
-  'plum': '🟣',
-  'apricot': '🟠',
-  'fig': '🟤',
-  'persimmon': '🟠'
+  'persimmon': '🟠',
+  // Additional mappings for database fruit names
+  'berries': '🫐',
+  'mixed berries': '🫐',
+  'berry': '🫐'
 };
 
 // Get emoji for a fruit name (case insensitive)
 export const getFruitEmoji = (fruitName: string): string => {
-  const key = fruitName.toLowerCase().trim();
-  return fruitEmojis[key] || '🍎'; // Default to apple emoji
+  const key = fruitName.toLowerCase().trim()
+    .replace(/\s*\([^)]*\)/g, '') // Remove parentheses and content
+    .replace(/berries/g, 'berry') // Convert berries to berry
+    .replace(/s$/, ''); // Remove trailing 's' for plurals
+  
+  return fruitEmojis[key] || fruitEmojis[fruitName.toLowerCase().trim()] || '🍎'; // Default to apple emoji
 };
 
 // Recommendation level colors and badges

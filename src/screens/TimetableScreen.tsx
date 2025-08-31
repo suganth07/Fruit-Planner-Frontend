@@ -21,6 +21,26 @@ const TimetableScreen: React.FC = () => {
     }
   }, [user?.id]);
 
+  // Generate new plan when selected fruits change
+  useEffect(() => {
+    if (user?.id && selectedFruitIds.length > 0 && currentPlan) {
+      // Check if the current plan matches the selected fruits
+      const planFruitNames = new Set<string>();
+      currentPlan.planData.forEach((day: any) => {
+        day.fruits.forEach((fruit: any) => {
+          planFruitNames.add(fruit.fruitName.toLowerCase());
+        });
+      });
+      
+      // For now, just regenerate the plan when fruits change
+      // You could make this more sophisticated by checking actual fruit matches
+      if (selectedFruitIds.length > 0) {
+        console.log('Fruits changed, generating new plan...');
+        generateNewPlan();
+      }
+    }
+  }, [selectedFruitIds]);
+
   const fetchCurrentPlan = async () => {
     if (!user?.id) return;
     

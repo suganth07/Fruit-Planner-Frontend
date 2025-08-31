@@ -139,7 +139,6 @@ const commonConditions = [
   'Chronic Pain',
   'Neuropathy',
   'Peripheral Neuropathy',
-  'Gastroparesis',
   'Celiac Disease',
   'Lactose Intolerance',
   'Food Intolerances',
