@@ -5,8 +5,8 @@ import { useFruitList } from '../contexts/FruitListContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface FooterProps {
-  activeTab: 'home' | 'mylist' | 'timetable' | 'settings';
-  onTabPress: (tab: 'home' | 'mylist' | 'timetable' | 'settings') => void;
+  activeTab: 'home' | 'mylist' | 'timetable' | 'Recipes' | 'settings';
+  onTabPress: (tab: 'home' | 'mylist' | 'timetable' | 'Recipes' |'settings') => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ activeTab, onTabPress }) => {
@@ -89,6 +89,27 @@ const Footer: React.FC<FooterProps> = ({ activeTab, onTabPress }) => {
           activeTab === 'timetable' && [styles.activeTabText, { color: activeColor }]
         ]}>
           Timetable
+        </Text>
+      </TouchableOpacity>
+
+        <TouchableOpacity
+        style={[
+          styles.tab, 
+          activeTab === 'Recipes' && [styles.activeTab, { backgroundColor: `${activeColor}15` }]
+        ]}
+        onPress={() => onTabPress('Recipes')}
+      >
+        <Ionicons
+          name={activeTab === 'Recipes' ? 'restaurant' : 'restaurant-outline'}
+          size={24}
+          color={activeTab === 'Recipes' ? activeColor : inactiveColor}
+        />
+        <Text style={[
+          styles.tabText, 
+          { color: inactiveColor },
+          activeTab === 'Recipes' && [styles.activeTabText, { color: activeColor }]
+        ]}>
+          Recipes
         </Text>
       </TouchableOpacity>
 

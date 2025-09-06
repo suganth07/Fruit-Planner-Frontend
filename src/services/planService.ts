@@ -47,6 +47,8 @@ export interface GeneratePlanResponse {
 }
 
 class PlanService {
+
+  
   
   async generateWeeklyPlan(request: GeneratePlanRequest): Promise<GeneratePlanResponse> {
     try {
@@ -133,6 +135,7 @@ Key nutrients: ${summary.keyNutrients?.join(', ') || 'Various nutrients'}.
 Benefits: ${summary.weeklyBenefits || 'General health benefits'}`;
   }
 
+  
   // Create a mock plan for testing (will be replaced with real API)
   createMockPlan(): WeeklyPlan {
     return {

@@ -25,7 +25,7 @@ const MyListScreen: React.FC = () => {
     addFruit 
   } = useFruitList();
   const [activeTab, setActiveTab] = useState<'myList' | 'recommended' | 'avoided'>('myList');
-
+  
   const selectedFruits = allFruits.filter(fruit => selectedFruitIds.includes(fruit.id));
 
   const getRecommendedFruits = () => {

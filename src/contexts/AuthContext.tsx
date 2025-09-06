@@ -5,7 +5,8 @@ import config from '../config/env';
 
 interface User {
   id: string;
-  email: string;
+  username: string;
+  email?: string;
   name: string;
   conditions?: string[];
   createdAt?: string;
@@ -14,12 +15,14 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name: string, conditions?: string[]) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  updateUser: (userData: User) => void;
+  updateUser: (userData: User) => Promise<void>;
   refreshUserData: () => Promise<void>;
   isLoading: boolean;
+  isFirstTimeLogin: boolean;
+  setFirstTimeLoginComplete: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +42,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFirstTimeLogin, setIsFirstTimeLogin] = useState(false);
 
   // Load user data on app start
   useEffect(() => {
@@ -68,6 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.user) {
         const updatedUser: User = {
           id: response.user.id.toString(),
+          username: response.user.username,
           email: response.user.email,
           name: response.user.name,
           conditions: response.user.conditions || [],
@@ -104,10 +109,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (
-    email: string, 
+    username: string, 
     password: string, 
-    name: string, 
-    conditions: string[] = []
+    name: string
   ): Promise<boolean> => {
     setIsLoading(true);
     
@@ -118,10 +122,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          email, 
+          username, 
           password, 
-          name,
-          conditions 
+          name
         }),
       });
 
@@ -130,6 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.ok && data.success) {
         const userData: User = {
           id: data.data.user.id.toString(),
+          username: data.data.user.username,
           email: data.data.user.email,
           name: data.data.user.name || name,
           conditions: data.data.user.conditions || [],
@@ -138,6 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         await saveTokenAndUser(data.data.token, userData);
+        setIsFirstTimeLogin(true); // Mark as first-time login for new registrations
         setIsLoading(false);
         return true;
       } else {
@@ -152,7 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
     try {
@@ -161,7 +166,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -169,8 +174,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.ok && data.success) {
         const userData: User = {
           id: data.data.user.id.toString(),
+          username: data.data.user.username,
           email: data.data.user.email,
-          name: data.data.user.name || email.split('@')[0],
+          name: data.data.user.name || username,
           conditions: data.data.user.conditions || [],
           createdAt: data.data.user.createdAt,
           updatedAt: data.data.user.updatedAt
@@ -187,11 +193,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Login error (network):', error);
       // For development: still allow demo login if API is unavailable
-      if (email && password) {
+      if (username && password) {
         const demoUser: User = {
           id: 'demo',
-          email: email,
-          name: email.split('@')[0],
+          username: username,
+          email: undefined,
+          name: username,
           conditions: []
         };
         setUser(demoUser);
@@ -217,6 +224,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const setFirstTimeLoginComplete = () => {
+    setIsFirstTimeLogin(false);
+  };
+
   const value: AuthContextType = {
     user,
     login,
@@ -224,7 +235,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateUser,
     refreshUserData,
-    isLoading
+    isLoading,
+    isFirstTimeLogin,
+    setFirstTimeLoginComplete
   };
 
   return (

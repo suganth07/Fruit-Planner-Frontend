@@ -14,77 +14,38 @@ import {
   Text, 
   Card,
   ActivityIndicator,
-  Divider,
-  Checkbox
+  Divider
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
-const medicalConditions = [
-  { display: 'Diabetes', value: 'diabetes' },
-  { display: 'Hypertension', value: 'hypertension' },
-  { display: 'Heart Disease', value: 'heart_disease' },
-  { display: 'Kidney Stone', value: 'kidney_stone' },
-  { display: 'High Cholesterol', value: 'high_cholesterol' },
-  { display: 'Obesity', value: 'obesity' },
-  { display: 'Digestive Issues', value: 'digestive_issues' },
-  { display: 'Anemia', value: 'anemia' },
-  { display: 'Arthritis', value: 'arthritis' },
-  { display: 'Osteoporosis', value: 'osteoporosis' },
-  { display: 'Asthma', value: 'asthma' },
-  { display: 'Depression', value: 'depression' },
-  { display: 'GERD', value: 'gerd' },
-  { display: 'Gout', value: 'gout' },
-  { display: 'Acid Reflux', value: 'acid_reflux' },
-  { display: 'Liver Disease', value: 'liver_disease' },
-  { display: 'Thyroid Issues', value: 'thyroid_issues' },
-  { display: 'Migraine', value: 'migraine' },
-  { display: 'Anxiety', value: 'anxiety' },
-  { display: 'Insomnia', value: 'insomnia' },
-  { display: 'Chronic Fatigue', value: 'chronic_fatigue' },
-  { display: 'Fibromyalgia', value: 'fibromyalgia' },
-  { display: 'PCOS', value: 'pcos' },
-  { display: 'Menopause', value: 'menopause' },
-  { display: 'Memory Issues', value: 'memory_issues' },
-  { display: 'Eye Health', value: 'eye_health' },
-  { display: 'Skin Problems', value: 'skin_problems' },
-  { display: 'Immune Support', value: 'immune_support' },
-  { display: 'Weight Management', value: 'weight_management' },
-  { display: 'Bone Health', value: 'bone_health' }
-];
-
 interface SignUpScreenProps {
   onSwitchToLogin: () => void;
 }
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSwitchToLogin }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const { register, isLoading } = useAuth();
   const { isDark, paperTheme } = useTheme();
-
-  const handleConditionToggle = (conditionValue: string) => {
-    setSelectedConditions(prev => 
-      prev.includes(conditionValue)
-        ? prev.filter(c => c !== conditionValue)
-        : [...prev, conditionValue]
-    );
-  };
 
   const validateForm = (): boolean => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter your name');
       return false;
     }
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+    if (!username.trim()) {
+      Alert.alert('Error', 'Please enter your username');
+      return false;
+    }
+    if (username.length < 3) {
+      Alert.alert('Error', 'Username must be at least 3 characters');
       return false;
     }
     if (password.length < 8) {
@@ -102,7 +63,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSwitchToLogin }) => {
     if (!validateForm()) return;
 
     try {
-      const success = await register(email, password, name, selectedConditions);
+      const success = await register(username, password, name);
       if (!success) {
         Alert.alert('Error', 'Registration failed. Please try again.');
       }
@@ -172,17 +133,16 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSwitchToLogin }) => {
                 }}
               />
 
-              {/* Email Input */}
+              {/* Username Input */}
               <TextInput
-                label="Email Address"
-                value={email}
-                onChangeText={setEmail}
+                label="Username"
+                value={username}
+                onChangeText={setUsername}
                 mode="outlined"
                 style={[styles.input, { backgroundColor: paperTheme.colors.surface }]}
-                keyboardType="email-address"
+                autoComplete="username"
                 autoCapitalize="none"
-                autoComplete="email"
-                left={<TextInput.Icon icon="email" />}
+                left={<TextInput.Icon icon="account" />}
                 textColor={paperTheme.colors.onSurface}
                 theme={{ 
                   colors: { 
@@ -243,29 +203,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSwitchToLogin }) => {
                   } 
                 }}
               />
-
-              {/* Medical Conditions Section */}
-              <Text style={[styles.sectionTitle, { color: paperTheme.colors.onSurface }]}>Medical Conditions (Optional)</Text>
-              <Text style={[styles.sectionSubtitle, { color: paperTheme.colors.onSurface }]}>
-                Select any conditions for personalized recommendations
-              </Text>
-              
-              <View style={styles.conditionsContainer}>
-                {medicalConditions.map((condition) => (
-                  <TouchableOpacity
-                    key={condition.value}
-                    style={styles.conditionItem}
-                    onPress={() => handleConditionToggle(condition.value)}
-                  >
-                    <Checkbox
-                      status={selectedConditions.includes(condition.value) ? 'checked' : 'unchecked'}
-                      onPress={() => handleConditionToggle(condition.value)}
-                      color="#6200ee"
-                    />
-                    <Text style={[styles.conditionText, { color: paperTheme.colors.onSurface }]}>{condition.display}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               {/* Sign Up Button */}
               <Button

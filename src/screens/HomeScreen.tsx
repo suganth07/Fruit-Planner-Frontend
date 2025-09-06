@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image } from 'react-native';
 import { 
   Text, 
   Card,
@@ -15,7 +15,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useFruitList } from '../contexts/FruitListContext';
 import { getFruitEmoji, getRecommendationStyle } from '../utils/fruitUtils';
 
-const FRUITS_PER_PAGE = 6;
+const logo = require('../../assets/images/logo.png');
+
+const FRUITS_PER_PAGE = 5;
 
 const HomeScreen: React.FC = () => {
   const { user } = useAuth();
@@ -30,6 +32,30 @@ const HomeScreen: React.FC = () => {
   } = useFruitList();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  
+  // Component for displaying fruit image with emoji fallback
+  const FruitImage = ({ fruitName }: { fruitName: string }) => {
+    const [imageError, setImageError] = useState(false);
+    const imageUrl = `https://raw.githubusercontent.com/suganth07/fruit-images/main/${fruitName.toLowerCase().replace(/\s+/g, '-')}.png`;
+    const emoji = getFruitEmoji(fruitName);
+    
+    if (imageError) {
+      return (
+        <View style={[styles.fruitImage, styles.emojiContainer, { backgroundColor: isDark ? '#444444' : '#F5F5F5' }]}>
+          <Text style={styles.fruitEmoji}>{emoji}</Text>
+        </View>
+      );
+    }
+    
+    return (
+      <Image 
+        source={{ uri: imageUrl }}
+        style={styles.fruitImage}
+        onError={() => setImageError(true)}
+      />
+    );
+  };
 
   // Filter fruits based on search query only
   const filteredFruits = useMemo(() => {
@@ -57,26 +83,51 @@ const HomeScreen: React.FC = () => {
   };
 
   const renderFruitCard = ({ item }: { item: any }) => {
-    const emoji = getFruitEmoji(item.name);
+    // Use online images with fallback to emoji
+    const getCardImageUrl = (fruitName: string) => {
+      const imageName = fruitName.toLowerCase().replace(/\s+/g, '-');
+      return `https://raw.githubusercontent.com/suganth07/fruit-images/main/${imageName}-card.jpg`;
+    };
+
+    const handleImageError = (fruitName: string) => {
+      console.log('Failed to load card image for:', fruitName);
+      setFailedImages(prev => new Set([...prev, fruitName]));
+    };
+
+    const hasImageFailed = failedImages.has(item.name);
     
     return (
       <Card style={[styles.fruitCard, { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' }]}>
-        <Card.Content style={styles.fruitCardContent}>
-          <View style={styles.fruitHeader}>
-            <View style={styles.fruitTitleRow}>
-              <Text style={styles.fruitEmoji}>{emoji}</Text>
-              <Text style={[styles.fruitName, { color: isDark ? '#FFFFFF' : '#333333' }]}>{item.name}</Text>
+        {/* Card Image - Top 30% */}
+        <View style={styles.cardImageContainer}>
+          {!hasImageFailed ? (
+            <Image 
+              source={{ uri: getCardImageUrl(item.name) }}
+              style={styles.cardImage}
+              onError={() => handleImageError(item.name)}
+            />
+          ) : (
+            <View style={[styles.cardImage, styles.emojiCardContainer, { backgroundColor: isDark ? '#444444' : '#F0F0F0' }]}>
+              <Text style={styles.cardEmoji}>{getFruitEmoji(item.name)}</Text>
             </View>
+          )}
+          <View style={styles.imageOverlay}>
+            <Text style={styles.cardFruitName}>{item.name}</Text>
+          </View>
+        </View>
+        
+        {/* Card Content - Bottom 70% */}
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.fruitBenefits, { color: isDark ? '#CCCCCC' : '#666666' }]} numberOfLines={2}>
+              {item.benefits}
+            </Text>
             <Checkbox
               status={isFruitSelected(item.id) ? 'checked' : 'unchecked'}
               onPress={() => handleFruitToggle(item.id)}
               theme={paperTheme}
             />
           </View>
-          
-          <Text style={[styles.fruitBenefits, { color: isDark ? '#CCCCCC' : '#666666' }]} numberOfLines={2}>
-            {item.benefits}
-          </Text>
           
           <View style={styles.nutritionInfo}>
             <Chip style={[styles.nutritionChip, { backgroundColor: isDark ? '#444444' : 'rgba(98, 0, 238, 0.1)' }]} 
@@ -158,59 +209,64 @@ const HomeScreen: React.FC = () => {
 
   return (
     <LinearGradient colors={gradientColors} style={styles.container}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: paperTheme.colors.onBackground }]}>Discover Fruits</Text>
-        <Text style={[styles.subtitle, { color: paperTheme.colors.onBackground }]}>
-          Browse and add fruits to your personal list
-        </Text>
+      {/* Loading State */}
+      {isLoadingFruits ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={paperTheme.colors.primary} />
+          <Text style={[styles.loadingText, { color: paperTheme.colors.onBackground }]}>
+            Loading fruits...
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={paginatedFruits}
+          renderItem={renderFruitCard}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={1}
+          contentContainerStyle={styles.fruitsList}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={() => (
+            <View style={styles.headerContent}>
+              <Image
+                source={logo}
+                style={styles.logo}
+              />
+              <Text style={[styles.title, { color: paperTheme.colors.onBackground }]}>Discover Fruits</Text>
+              <Text style={[styles.subtitle, { color: paperTheme.colors.onBackground }]}>
+                Browse and add fruits to your personal list
+              </Text>
 
-        {/* Search Bar */}
-        <Searchbar
-          placeholder="Search fruits..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' }]}
-          inputStyle={[styles.searchInput, { color: isDark ? '#FFFFFF' : '#333333' }]}
-          iconColor={isDark ? '#FFFFFF' : '#666666'}
-          placeholderTextColor={isDark ? '#999999' : '#666666'}
-          theme={paperTheme}
+              {/* Search Bar */}
+              <Searchbar
+                placeholder="Search fruits..."
+                onChangeText={setSearchQuery}
+                value={searchQuery}
+                style={[styles.searchBar, { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' }]}
+                inputStyle={[styles.searchInput, { color: isDark ? '#FFFFFF' : '#333333' }]}
+                iconColor={isDark ? '#FFFFFF' : '#666666'}
+                placeholderTextColor={isDark ? '#999999' : '#666666'}
+                theme={paperTheme}
+              />
+
+              {/* Selected Fruits Counter */}
+              {selectedFruitIds.length > 0 && (
+                <View style={[styles.selectedCounter, { backgroundColor: isDark ? '#6200ee' : 'rgba(98, 0, 238, 0.9)' }]}>
+                  <Text style={styles.selectedText}>
+                    {selectedFruitIds.length} fruit{selectedFruitIds.length !== 1 ? 's' : ''} selected
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+          ListFooterComponent={() => (
+            totalPages > 1 ? (
+              <View style={styles.paginationContainer}>
+                {renderPagination()}
+              </View>
+            ) : null
+          )}
         />
-
-        {/* Selected Fruits Counter */}
-        {selectedFruitIds.length > 0 && (
-          <View style={[styles.selectedCounter, { backgroundColor: isDark ? '#6200ee' : 'rgba(98, 0, 238, 0.9)' }]}>
-            <Text style={styles.selectedText}>
-              {selectedFruitIds.length} fruit{selectedFruitIds.length !== 1 ? 's' : ''} selected
-            </Text>
-          </View>
-        )}
-
-        {/* Loading State */}
-        {isLoadingFruits ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={paperTheme.colors.primary} />
-            <Text style={[styles.loadingText, { color: paperTheme.colors.onBackground }]}>
-              Loading fruits...
-            </Text>
-          </View>
-        ) : (
-          <>
-            {/* Fruits List */}
-            <FlatList
-              data={paginatedFruits}
-              renderItem={renderFruitCard}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              columnWrapperStyle={styles.row}
-              contentContainerStyle={styles.fruitsList}
-              showsVerticalScrollIndicator={false}
-            />
-
-            {/* Pagination */}
-            {totalPages > 1 && renderPagination()}
-          </>
-        )}
-      </View>
+      )}
     </LinearGradient>
   );
 };
@@ -219,11 +275,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    flex: 1,
+  headerContent: {
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginBottom: 20,
+    borderRadius: 40,
   },
   title: {
     fontSize: 28,
@@ -274,16 +336,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   fruitsList: {
-    flexGrow: 1,
-  },
-  row: {
-    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   fruitCard: {
-    width: '48%',
-    marginBottom: 12,
-    borderRadius: 12,
-    elevation: 3,
+    width: '100%',
+    marginBottom: 16,
+    borderRadius: 16,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -291,45 +351,72 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    overflow: 'hidden',
   },
-  fruitCardContent: {
-    padding: 12,
+  cardImageContainer: {
+    height: 120, // 30% of typical card height
+    position: 'relative',
+    overflow: 'hidden',
   },
-  fruitHeader: {
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  emojiCardContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  cardEmoji: {
+    fontSize: 60,
+    textAlign: 'center',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  cardFruitName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  cardContent: {
+    padding: 16,
+    minHeight: 140, // 70% of typical card height
+  },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  fruitTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  fruitEmoji: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  fruitName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    flex: 1,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   fruitBenefits: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+    marginRight: 12,
   },
   nutritionInfo: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 6,
+    marginTop: 8,
   },
   nutritionChip: {
-    height: 26,
-    marginRight: 4,
-    marginBottom: 2,
-    borderRadius: 13,
+    height: 28,
+    marginRight: 6,
+    marginBottom: 4,
+    borderRadius: 14,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: {
@@ -340,29 +427,28 @@ const styles = StyleSheet.create({
     shadowRadius: 1.00,
   },
   chipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    lineHeight: 14,
+    lineHeight: 16,
+  },
+  paginationContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   paginationWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    // marginTop: 0,
-    // paddingHorizontal: 0,
-    // paddingVertical: 0,
-    // // backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    // borderRadius:0,
-    // marginHorizontal: 1,
   },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#6200ee',
-    paddingVertical: 8, // reduced from 14
-    paddingHorizontal: 12, // reduced from 20
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    minWidth: 60, // reduced from 80
+    minWidth: 60,
     justifyContent: 'center',
     elevation: 4,
     shadowColor: '#000',
@@ -411,6 +497,53 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '500',
+  },
+  // Legacy styles - keeping for compatibility
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  fruitCardContent: {
+    padding: 16,
+  },
+  fruitHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  fruitImageContainer: {
+    marginRight: 12,
+  },
+  fruitImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    resizeMode: 'cover',
+  },
+  emojiContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  fruitEmoji: {
+    fontSize: 30,
+  },
+  fruitDetails: {
+    flex: 1,
+  },
+  fruitTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  fruitName: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   recommendationBadge: {
     alignSelf: 'flex-start',

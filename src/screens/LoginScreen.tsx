@@ -23,7 +23,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import SignUpScreen from './SignUpScreen';
 
 const LoginScreen: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
@@ -31,15 +31,15 @@ const LoginScreen: React.FC = () => {
   const { isDark, paperTheme } = useTheme();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!username || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     try {
-      const success = await login(email, password);
+      const success = await login(username, password);
       if (!success) {
-        Alert.alert('Error', 'Invalid email or password. Please try again.');
+        Alert.alert('Error', 'Invalid username or password. Please try again.');
       }
     } catch (error) {
       Alert.alert('Error', 'Login failed. Please check your connection and try again.');
@@ -95,17 +95,16 @@ const LoginScreen: React.FC = () => {
 
               <Divider style={[styles.divider, { backgroundColor: paperTheme.colors.outline }]} />
 
-              {/* Email Input */}
+              {/* Username Input */}
               <TextInput
-                label="Email Address"
-                value={email}
-                onChangeText={setEmail}
+                label="Username"
+                value={username}
+                onChangeText={setUsername}
                 mode="outlined"
                 style={[styles.input, { backgroundColor: paperTheme.colors.surface }]}
-                keyboardType="email-address"
                 autoCapitalize="none"
-                autoComplete="email"
-                left={<TextInput.Icon icon="email" />}
+                autoComplete="username"
+                left={<TextInput.Icon icon="account" />}
                 theme={paperTheme}
                 textColor={paperTheme.colors.onSurface}
               />

@@ -5,10 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "scheme": "fruitplan",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6200ee"
     },
@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#6200ee"
+        "backgroundColor": "#ffffff"
       },
       "permissions": [
         "INTERNET",
@@ -37,11 +37,10 @@
       "bundler": "metro"
     },
     "extra": {
-      "EXPO_PUBLIC_API_BASE_URL": "https://fruit-planner-backend.onrender.com/api",
-      "EXPO_PUBLIC_ENV": "production",
       "eas": {
         "projectId": "96e9d39a-d10a-4dac-9c6e-1218ba5b3302"
-      }
+      },
+      "EXPO_PUBLIC_API_BASE_URL": "https://fruit-planner-backend.onrender.com/api"
     }
   }
 }
