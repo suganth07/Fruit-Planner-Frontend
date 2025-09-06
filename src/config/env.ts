@@ -10,7 +10,7 @@ export const config = {
   API_BASE_URL: getEnvVar('EXPO_PUBLIC_API_BASE_URL', 'https://fruit-planner-backend.onrender.com/api'),
   
   // YouTube API configuration
-  YOUTUBE_API_KEY: getEnvVar('EXPO_PUBLIC_YOUTUBE_API_KEY', 'AIzaSyCwEY951Paf66lRlcJaX0UXYkTZmRaz9qY'),
+  YOUTUBE_API_KEY: getEnvVar('EXPO_PUBLIC_YOUTUBE_API_KEY', ''),
   
   // App info
   APP_NAME: 'FruitPlan AI',
